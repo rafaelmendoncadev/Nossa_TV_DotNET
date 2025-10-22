@@ -1,0 +1,152 @@
+@model Nossa_TV.ViewModels.LeadListViewModel
+@{
+    ViewData["Title"] = "Gerenciar Leads";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid my-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-people me-2"></i>Gerenciar Leads</h2>
+        </div>
+        <div class="col-auto">
+            <a asp-action="Export" class="btn btn-success">
+                <i class="bi bi-download me-1"></i>Exportar CSV
+            </a>
+            <a asp-controller="AdminMessages" asp-action="Index" class="btn btn-outline-primary">
+                <i class="bi bi-envelope me-1"></i>Mensagens
+            </a>
+        </div>
+    </div>
+
+    <!-- Estatística Rápida -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total de Leads</h5>
+                    <h2>@Model.TotalLeads</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form asp-action="Index" method="get" class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label">Pesquisar</label>
+                    <input type="text" name="search" class="form-control" 
+                           placeholder="Nome ou email..." value="@Model.SearchTerm" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tag</label>
+                    <input type="text" name="tag" class="form-control" 
+                           placeholder="Filtrar por tag..." value="@Model.TagFilter" />
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-search me-1"></i>Buscar
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i>Limpar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Leads -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-body">
+            @if (Model.Leads.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+                    <p class="text-muted mt-3">Nenhum lead encontrado.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Telefone</th>
+                                <th>Primeira Interação</th>
+                                <th>Última Interação</th>
+                                <th>Mensagens</th>
+                                <th>Tags</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var lead in Model.Leads)
+                            {
+                                <tr>
+                                    <td>@lead.Name</td>
+                                    <td><a href="mailto:@lead.Email">@lead.Email</a></td>
+                                    <td>@(lead.Phone ?? "-")</td>
+                                    <td>@lead.FirstContactDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@lead.LastContactDate.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        <span class="badge bg-primary">@lead.MessageCount</span>
+                                    </td>
+                                    <td>
+                                        @if (lead.Tags != null && lead.Tags.Any())
+                                        {
+                                            @foreach (var tag in lead.Tags.Take(2))
+                                            {
+                                                <span class="badge bg-secondary me-1">@tag</span>
+                                            }
+                                            @if (lead.Tags.Count > 2)
+                                            {
+                                                <span class="badge bg-secondary">+@(lead.Tags.Count - 2)</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <a asp-action="Detail" asp-route-id="@lead.Id" class="btn btn-sm btn-primary" title="Ver detalhes">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @if (Model.TotalPages > 1)
+                {
+                    <nav aria-label="Paginação">
+                        <ul class="pagination justify-content-center">
+                            @for (int i = 1; i <= Model.TotalPages; i++)
+                            {
+                                <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                    <a class="page-link" asp-action="Index" asp-route-page="@i" 
+                                       asp-route-search="@Model.SearchTerm" 
+                                       asp-route-tag="@Model.TagFilter">@i</a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                }
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,136 @@
+@model Dictionary<string, int>
+@{
+    ViewData["Title"] = "Dashboard - Mensagens";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid my-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-graph-up me-2"></i>Dashboard de Mensagens</h2>
+        <a asp-action="Index" class="btn btn-primary">
+            <i class="bi bi-envelope me-1"></i>Ver Mensagens
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-primary h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-inbox-fill" style="font-size: 3rem;"></i>
+                    <h2 class="mt-3">@Model.GetValueOrDefault("Total", 0)</h2>
+                    <p class="mb-0">Total de Mensagens</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-warning h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-envelope-exclamation-fill" style="font-size: 3rem;"></i>
+                    <h2 class="mt-3">@Model.GetValueOrDefault("Unread", 0)</h2>
+                    <p class="mb-0">Mensagens Não Lidas</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-info h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-envelope-fill" style="font-size: 3rem;"></i>
+                    <h2 class="mt-3">@Model.GetValueOrDefault("New", 0)</h2>
+                    <p class="mb-0">Mensagens Novas</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-success h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-check-circle-fill" style="font-size: 3rem;"></i>
+                    <h2 class="mt-3">@Model.GetValueOrDefault("Replied", 0)</h2>
+                    <p class="mb-0">Mensagens Respondidas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Estatísticas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Mensagens Arquivadas</span>
+                            <strong>@Model.GetValueOrDefault("Archived", 0)</strong>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-warning" role="progressbar" 
+                                 style="width: @(Model.GetValueOrDefault("Total", 0) > 0 ? (Model.GetValueOrDefault("Archived", 0) * 100.0 / Model.GetValueOrDefault("Total", 0)) : 0)%">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Taxa de Resposta</span>
+                            <strong>
+                                @if (Model.GetValueOrDefault("Total", 0) > 0)
+                                {
+                                    @($"{(Model.GetValueOrDefault("Replied", 0) * 100.0 / Model.GetValueOrDefault("Total", 0)):F1}%")
+                                }
+                                else
+                                {
+                                    @("0%")
+                                }
+                            </strong>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: @(Model.GetValueOrDefault("Total", 0) > 0 ? (Model.GetValueOrDefault("Replied", 0) * 100.0 / Model.GetValueOrDefault("Total", 0)) : 0)%">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-0">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Mensagens Pendentes</span>
+                            <strong>@(Model.GetValueOrDefault("New", 0) + Model.GetValueOrDefault("Unread", 0) - Model.GetValueOrDefault("Replied", 0))</strong>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-danger" role="progressbar" 
+                                 style="width: @(Model.GetValueOrDefault("Total", 0) > 0 ? ((Model.GetValueOrDefault("New", 0) + Model.GetValueOrDefault("Unread", 0) - Model.GetValueOrDefault("Replied", 0)) * 100.0 / Model.GetValueOrDefault("Total", 0)) : 0)%">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Ações Rápidas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a asp-action="Index" asp-route-status="New" class="btn btn-outline-primary">
+                            <i class="bi bi-envelope me-2"></i>Ver Mensagens Novas
+                        </a>
+                        <a asp-action="Index" asp-route-status="" class="btn btn-outline-secondary">
+                            <i class="bi bi-envelope-open me-2"></i>Ver Não Lidas
+                        </a>
+                        <a asp-controller="AdminLeads" asp-action="Index" class="btn btn-outline-success">
+                            <i class="bi bi-people me-2"></i>Gerenciar Leads
+                        </a>
+                        <a asp-controller="AdminLeads" asp-action="Export" class="btn btn-outline-info">
+                            <i class="bi bi-download me-2"></i>Exportar Leads
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

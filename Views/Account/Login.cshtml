@@ -1,0 +1,83 @@
+@model Nossa_TV.ViewModels.LoginViewModel
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-5 col-md-7">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold">Bem-vindo!</h2>
+                        <p class="text-muted">Entre na sua conta</p>
+                    </div>
+
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+                        </div>
+                    }
+
+                    <form asp-action="Login" method="post">
+                        @Html.AntiForgeryToken() 
+                        <input type="hidden" asp-for="ReturnUrl" />
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">
+                                <i class="bi bi-envelope me-2"></i>Email
+                            </label>
+                            <input asp-for="Email" class="form-control form-control-lg" placeholder="seu@email.com" autofocus />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label">
+                                <i class="bi bi-lock me-2"></i>Senha
+                            </label>
+                            <input asp-for="Password" type="password" class="form-control form-control-lg" placeholder="Digite sua senha" />
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input asp-for="RememberMe" type="checkbox" class="form-check-input" id="rememberMe" />
+                            <label class="form-check-label" for="rememberMe">
+                                Lembrar-me
+                            </label>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Entrar
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <p class="mb-0">Não tem uma conta?
+                            <a asp-action="Register" asp-route-returnUrl="@Model.ReturnUrl" class="text-decoration-none fw-bold">
+                                Cadastre-se agora
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -1,0 +1,311 @@
+﻿@{
+    ViewData["Title"] = "Nossa TV - Assista em Duas Telas +400 Canais Ao Vivo";
+}
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="particles-bg" id="particles-canvas"></div>
+    <div class="container hero-content">
+        <div class="hero-text">
+            <h1 class="hero-title">Assista em Duas Telas<br><span class="highlight">+400 Canais Ao Vivo</span></h1>
+            <p class="hero-subtitle">TV, Filmes, Séries e Futebol na Palma da Sua Mão</p>
+            <div class="compatibility-badges">
+                <span class="badge-item">
+                    <i class="icon-device"></i> Android
+                </span>
+                <span class="badge-item">
+                    <i class="icon-device"></i> Fire Stick
+                </span>
+                <span class="badge-item">
+                    <i class="icon-device"></i> Celular
+                </span>
+            </div>
+            <a href="#planos" class="btn-primary">Ver Planos Disponíveis</a>
+        </div>
+        <div class="hero-image">
+            <div class="mockup-container">
+                <div class="screen-mockup"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section" id="recursos">
+    <div class="container">
+        <h2 class="section-title">Por Que Escolher Nossa TV?</h2>
+        <div class="features-grid">
+            <div class="feature-card glass-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="3" width="9" height="9" rx="2"></rect>
+                        <rect x="13" y="3" width="9" height="9" rx="2"></rect>
+                        <rect x="2" y="12" width="9" height="9" rx="2"></rect>
+                        <rect x="13" y="12" width="9" height="9" rx="2"></rect>
+                    </svg>
+                </div>
+                <h3>Duas Telas Simultaneamente</h3>
+                <p>Assista dois canais ao mesmo tempo. Perfeito para acompanhar vários jogos ou conteúdos diferentes.</p>
+            </div>
+            <div class="feature-card glass-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polygon points="10 8 16 12 10 16 10 8"></polygon>
+                    </svg>
+                </div>
+                <h3>+400 Canais Ao Vivo</h3>
+                <p>Acesso completo a canais de TV aberta, esportes, filmes, séries, infantil e muito mais.</p>
+            </div>
+            <div class="feature-card glass-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                    </svg>
+                </div>
+                <h3>Categorias Organizadas</h3>
+                <p>Encontre facilmente seus canais favoritos com nossa interface intuitiva e organizada por categorias.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Categories Section -->
+<section class="categories-section">
+    <div class="container">
+        <h2 class="section-title">Explore Nossas Categorias</h2>
+        <div class="categories-carousel">
+            <button class="carousel-btn prev-btn" onclick="scrollCarousel(-1)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+            <div class="carousel-container" id="categoriesCarousel">
+                <div class="category-card">
+                    <div class="category-image">
+                        <div class="category-overlay"></div>
+                        <span class="category-icon">📺</span>
+                    </div>
+                    <h4>Canais Abertos</h4>
+                    <p>Globo, SBT, Record e mais</p>
+                </div>
+                <div class="category-card">
+                    <div class="category-image sports">
+                        <div class="category-overlay"></div>
+                        <span class="category-icon">⚽</span>
+                    </div>
+                    <h4>Esportes</h4>
+                    <p>Todos os jogos ao vivo</p>
+                </div>
+                <div class="category-card">
+                    <div class="category-image kids">
+                        <div class="category-overlay"></div>
+                        <span class="category-icon">🎈</span>
+                    </div>
+                    <h4>Infantil</h4>
+                    <p>Desenhos e programas kids</p>
+                </div>
+                <div class="category-card">
+                    <div class="category-image movies">
+                        <div class="category-overlay"></div>
+                        <span class="category-icon">🎬</span>
+                    </div>
+                    <h4>Filmes e Séries</h4>
+                    <p>Conteúdo sempre atualizado</p>
+                </div>
+            </div>
+            <button class="carousel-btn next-btn" onclick="scrollCarousel(1)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Plans Section -->
+<section class="plans-section" id="planos">
+    <div class="container">
+        <h2 class="section-title">Escolha Seu Plano</h2>
+        <p class="section-subtitle">Pagamento seguro via Mercado Pago</p>
+        <div class="plans-grid">
+            <div class="plan-card glass-card">
+                <h3 class="plan-name">Plano Mensal</h3>
+                <div class="plan-price">
+                    <span class="currency">R$</span>
+                    <span class="amount">29</span>
+                    <span class="period">/mês</span>
+                </div>
+                <ul class="plan-features">
+                    <li>✓ +400 Canais ao Vivo</li>
+                    <li>✓ Duas Telas Simultâneas</li>
+                    <li>✓ Todos os Dispositivos</li>
+                    <li>✓ Qualidade HD</li>
+                    <li>✓ Suporte 24/7</li>
+                </ul>
+                <a href="https://www.mercadopago.com.br" target="_blank" class="btn-secondary">Comprar Agora</a>
+            </div>
+            <div class="plan-card glass-card featured-plan">
+                <div class="popular-badge">Mais Popular</div>
+                <h3 class="plan-name">Plano Anual</h3>
+                <div class="plan-price">
+                    <span class="currency">R$</span>
+                    <span class="amount">249</span>
+                    <span class="period">/ano</span>
+                </div>
+                <div class="plan-discount">Economize R$ 99 por ano</div>
+                <ul class="plan-features">
+                    <li>✓ +400 Canais ao Vivo</li>
+                    <li>✓ Duas Telas Simultâneas</li>
+                    <li>✓ Todos os Dispositivos</li>
+                    <li>✓ Qualidade HD</li>
+                    <li>✓ Suporte Prioritário 24/7</li>
+                    <li>✓ Atualizações Gratuitas</li>
+                    <li>✓ Sem Reajuste por 12 Meses</li>
+                </ul>
+                <a href="https://www.mercadopago.com.br" target="_blank" class="btn-primary">Garantir Meu Plano</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="testimonials-section">
+    <div class="container">
+        <h2 class="section-title">O Que Nossos Clientes Dizem</h2>
+        <div class="testimonials-carousel">
+            <button class="carousel-btn prev-btn" onclick="scrollTestimonials(-1)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+            <div class="carousel-container" id="testimonialsCarousel">
+                <div class="testimonial-card glass-card">
+                    <div class="quote-icon">"</div>
+                    <div class="rating">⭐⭐⭐⭐⭐</div>
+                    <p class="testimonial-text">"Simplesmente perfeito! Consigo assistir dois jogos ao mesmo tempo. Não perco mais nenhum lance importante."</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">JS</div>
+                        <div class="author-info">
+                            <strong>João Silva</strong>
+                            <span>São Paulo, SP</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card glass-card">
+                    <div class="quote-icon">"</div>
+                    <div class="rating">⭐⭐⭐⭐⭐</div>
+                    <p class="testimonial-text">"Melhor custo-benefício! Centenas de canais por um preço justo. Meus filhos adoram os canais infantis."</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">MC</div>
+                        <div class="author-info">
+                            <strong>Maria Costa</strong>
+                            <span>Rio de Janeiro, RJ</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card glass-card">
+                    <div class="quote-icon">"</div>
+                    <div class="rating">⭐⭐⭐⭐⭐</div>
+                    <p class="testimonial-text">"Instalei na minha Fire Stick e funciona perfeitamente. Qualidade de imagem excelente e sem travamentos."</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">PS</div>
+                        <div class="author-info">
+                            <strong>Pedro Santos</strong>
+                            <span>Belo Horizonte, MG</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="carousel-btn next-btn" onclick="scrollTestimonials(1)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ Section -->
+<section class="faq-section" id="faq">
+    <div class="container">
+        <h2 class="section-title">Perguntas Frequentes</h2>
+        <div class="faq-container">
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    <span>Quais dispositivos são compatíveis com Nossa TV?</span>
+                    <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="faq-answer">
+                    <p>Nossa TV funciona em smartphones Android, tablets, Fire TV Stick, Smart TVs Android e computadores. Basta fazer o download do aplicativo ou acessar via navegador.</p>
+                </div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    <span>Como funciona o pagamento? É seguro?</span>
+                    <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="faq-answer">
+                    <p>Todos os pagamentos são processados pelo Mercado Pago, uma das plataformas mais seguras da América Latina. Aceitamos cartão de crédito, débito e PIX.</p>
+                </div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    <span>Como funciona a exibição em duas telas?</span>
+                    <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="faq-answer">
+                    <p>Você pode dividir a tela do seu dispositivo e assistir dois canais diferentes simultaneamente. Ideal para acompanhar vários jogos ou programas ao mesmo tempo.</p>
+                </div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    <span>Posso cancelar minha assinatura a qualquer momento?</span>
+                    <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="faq-answer">
+                    <p>Sim! Não há fidelidade. Você pode cancelar sua assinatura a qualquer momento através do aplicativo ou entrando em contato com nosso suporte.</p>
+                </div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    <span>Como funciona o suporte técnico?</span>
+                    <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="faq-answer">
+                    <p>Oferecemos suporte 24/7 via WhatsApp. Nossa equipe está sempre pronta para ajudar com qualquer dúvida ou problema técnico.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- WhatsApp Float Button -->
+<a href="https://wa.me/5511999999999?text=Olá! Gostaria de saber mais sobre o Nossa TV" 
+   target="_blank" 
+   class="whatsapp-float"
+   aria-label="Contato via WhatsApp">
+    <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+    </svg>
+    <span class="whatsapp-badge"></span>
+</a>
+
+@section Scripts {
+    <script src="~/js/landing.js" asp-append-version="true"></script>
+}

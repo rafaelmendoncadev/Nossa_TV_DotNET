@@ -1,0 +1,196 @@
+_SISTEMA_MENSAGENS.md
+# Prompt de Implementação: Sistema de Mensagens com Painel Administrativo
+
+## Contexto do Projeto
+Projeto ASP.NET Core MVC (.NET 8, C# 12.0) que necessita de um sistema completo de mensagens com gerenciamento administrativo e área do usuário.
+
+## Requisitos Funcionais
+
+### 1. Sistema de Mensagens do Usuário
+- **Formulário de Contato/Mensagem**
+  - Usuários (autenticados ou anônimos) podem enviar mensagens/perguntas
+  - Campos necessários: Nome, Email, Assunto, Mensagem, Data/Hora
+  - Validação de dados no cliente e servidor
+  - Feedback visual após envio (sucesso/erro)
+
+### 2. Painel Administrativo
+- **Gerenciamento de Mensagens**
+  - Listar todas as mensagens recebidas
+  - Filtros: status (nova/lida/respondida), data, usuário
+  - Marcar mensagens como lida/não lida
+  - Responder mensagens
+  - Arquivar ou excluir mensagens
+  - Estatísticas: total de mensagens, mensagens não lidas, taxa de resposta
+
+- **Gerenciamento de Leads/Clientes**
+  - Lista de todos os usuários que enviaram mensagens
+  - Informações: nome, email, quantidade de mensagens, primeira interação, última interação
+  - Segmentação para ações de marketing
+  - Exportar lista de leads (CSV/Excel)
+  - Tags/categorias para classificação de leads
+  - Histórico completo de interações por lead
+
+### 3. Área do Usuário
+- **Histórico de Mensagens**
+  - Usuário autenticado visualiza apenas suas próprias mensagens
+  - Lista cronológica de mensagens enviadas
+  - Status de cada mensagem (enviada, lida, respondida)
+  - Visualização de respostas do administrador
+  - Opção de enviar nova mensagem a partir do histórico
+  - Notificação de novas respostas
+
+## Estrutura Técnica Necessária
+
+### 1. Banco de Dados
+Criar as seguintes entidades/tabelas:
+
+**Messages (Mensagens)**
+
+•	Id (int, PK)
+•	UserId (string, FK - nullable para usuários anônimos)
+•	SenderName (string, obrigatório)
+•	SenderEmail (string, obrigatório)
+•	Subject (string, obrigatório)
+•	MessageContent (string, obrigatório)
+•	Status (enum: New, Read, Replied, Archived)
+•	IsRead (bool)
+•	CreatedAt (DateTime)
+•	ReadAt (DateTime?)
+•	RepliedAt (DateTime?)
+
+**MessageReplies (Respostas)**
+
+•	Id (int, PK)
+•	MessageId (int, FK)
+•	AdminUserId (string, FK)
+•	ReplyContent (string, obrigatório)
+•	CreatedAt (DateTime)
+
+**Leads (Leads/Clientes)**
+
+
+•	Id (int, PK)
+•	Name (string)
+•	Email (string, único)
+•	Phone (string?)
+•	FirstContactDate (DateTime)
+
+### 2. Estrutura de Pastas e Arquivos
+
+**Models:**
+- `Message.cs`
+- `MessageReply.cs`
+- `Lead.cs`
+- `MessageStatus.cs` (enum)
+
+**ViewModels:**
+- `SendMessageViewModel.cs`
+- `AdminMessageListViewModel.cs`
+- `AdminMessageDetailViewModel.cs`
+- `UserMessageHistoryViewModel.cs`
+- `LeadListViewModel.cs`
+- `LeadDetailViewModel.cs`
+
+**Controllers:**
+- `MessagesController.cs` - área pública/usuário
+- `Admin/AdminMessagesController.cs` - gerenciamento admin
+- `Admin/AdminLeadsController.cs` - gerenciamento de leads
+
+**Views:**
+- `Views/Messages/Send.cshtml` - formulário de envio
+- `Views/Messages/MyMessages.cshtml` - histórico do usuário
+- `Views/Messages/MessageDetail.cshtml` - detalhes da mensagem do usuário
+- `Views/Admin/AdminMessages/Index.cshtml` - lista de mensagens admin
+- `Views/Admin/AdminMessages/Detail.cshtml` - detalhes e resposta admin
+- `Views/Admin/AdminMessages/Dashboard.cshtml` - estatísticas
+- `Views/Admin/AdminLeads/Index.cshtml` - lista de leads
+- `Views/Admin/AdminLeads/Detail.cshtml` - detalhes do lead
+
+**Data:**
+- `ApplicationDbContext.cs` - configurar DbSets
+- `Migrations/` - migrações do EF Core
+
+**Services:**
+- `IMessageService.cs` / `MessageService.cs`
+- `ILeadService.cs` / `LeadService.cs`
+- `INotificationService.cs` / `NotificationService.cs`
+
+### 3. Funcionalidades por Controller
+
+**MessagesController (Área Pública/Usuário):**
+- `GET /Messages/Send` - Exibe formulário
+- `POST /Messages/Send` - Processa envio
+- `GET /Messages/MyMessages` - Histórico (requer autenticação)
+- `GET /Messages/Detail/{id}` - Detalhes da mensagem
+
+**AdminMessagesController:**
+- `GET /Admin/Messages` - Lista todas mensagens
+- `GET /Admin/Messages/Detail/{id}` - Detalhes + formulário de resposta
+- `POST /Admin/Messages/Reply/{id}` - Envia resposta
+- `POST /Admin/Messages/MarkAsRead/{id}` - Marca como lida
+- `POST /Admin/Messages/Archive/{id}` - Arquiva mensagem
+- `DELETE /Admin/Messages/Delete/{id}` - Exclui mensagem
+- `GET /Admin/Messages/Dashboard` - Estatísticas
+
+**AdminLeadsController:**
+- `GET /Admin/Leads` - Lista todos os leads
+- `GET /Admin/Leads/Detail/{id}` - Detalhes do lead
+- `POST /Admin/Leads/AddTag` - Adiciona tag/categoria
+- `GET /Admin/Leads/Export` - Exporta para CSV/Excel
+- `POST /Admin/Leads/UpdateNotes` - Atualiza notas do lead
+
+### 4. Configurações Necessárias no Program.cs
+
+// Adicionar DbContext builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Adicionar Identity para autenticação builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true) .AddRoles<IdentityRole>() .AddEntityFrameworkStores<ApplicationDbContext>();
+// Registrar serviços builder.Services.AddScoped<IMessageService, MessageService>(); builder.Services.AddScoped<ILeadService, LeadService>(); builder.Services.AddScoped<INotificationService, NotificationService>();
+// Autorização builder.Services.AddAuthorization(options => { options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin")); });
+
+### 5. Segurança e Autorização
+
+- Área administrativa protegida com `[Authorize(Roles = "Admin")]`
+- Usuários só podem ver suas próprias mensagens
+- Validação de propriedade de mensagens antes de exibir
+- Proteção CSRF em todos os formulários
+- Sanitização de entrada de dados (prevenir XSS)
+- Rate limiting para evitar spam de mensagens
+
+## Considerações de Performance
+
+- Implementar paginação em todas as listagens
+- Criar índices no banco de dados (Email, CreatedAt, Status)
+- Usar eager loading para evitar N+1 queries
+- Implementar cache para estatísticas do dashboard
+- Considerar arquivamento de mensagens antigas
+
+## Checklist de Conclusão
+
+- [ ] Usuários podem enviar mensagens com sucesso
+- [ ] Mensagens são armazenadas corretamente no banco
+- [ ] Admin pode visualizar todas as mensagens
+- [ ] Admin pode responder mensagens
+- [ ] Admin pode gerenciar status das mensagens
+- [ ] Leads são capturados automaticamente
+- [ ] Admin pode exportar lista de leads
+- [ ] Usuários autenticados veem seu histórico
+- [ ] Notificações funcionam corretamente
+- [ ] Sistema está protegido contra vulnerabilidades
+- [ ] UI é responsiva e intuitiva
+- [ ] Performance está otimizada
+
+## Recursos de Referência
+
+- Documentação ASP.NET Core MVC
+- Entity Framework Core Documentation
+- ASP.NET Core Identity
+- Bootstrap 5 Documentation
+- Chart.js para gráficos
+
+---
+
+**Nota:** Este sistema pode ser expandido futuramente com recursos como:
+- Chat em tempo real (SignalR)
+- Integração com CRM
+- Automação de marketing por email
+- Sistema de tickets/suporte
+- Analytics avançado de conversão de leads

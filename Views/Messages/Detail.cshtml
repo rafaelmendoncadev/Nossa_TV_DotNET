@@ -1,0 +1,90 @@
+@model Nossa_TV.ViewModels.AdminMessageDetailViewModel
+@{
+    ViewData["Title"] = "Detalhes da Mensagem";
+}
+
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Detalhes da Mensagem</h2>
+        <a asp-action="MyMessages" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+        </a>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">@Model.Subject</h5>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <p class="mb-1"><strong>De:</strong> @Model.SenderName</p>
+                    <p class="mb-1"><strong>Email:</strong> @Model.SenderEmail</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-1"><strong>Data:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                    <p class="mb-1">
+                        <span class="badge @GetStatusBadgeClass(Model.Status)">@GetStatusText(Model.Status)</span>
+                    </p>
+                </div>
+            </div>
+            <hr />
+            <div class="message-content">
+                <p>@Model.MessageContent</p>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Replies.Count > 0)
+    {
+        <h4 class="mb-3">Respostas</h4>
+        @foreach (var reply in Model.Replies)
+        {
+            <div class="card mb-3 border-start border-primary border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <small class="text-muted">
+                            <i class="bi bi-person-fill me-1"></i>Administrador
+                        </small>
+                        <small class="text-muted">
+                            <i class="bi bi-calendar me-1"></i>@reply.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                        </small>
+                    </div>
+                    <p class="mb-0">@reply.ReplyContent</p>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="alert alert-info" role="alert">
+            <i class="bi bi-info-circle me-2"></i>Esta mensagem ainda não foi respondida.
+        </div>
+    }
+</div>
+
+@functions {
+    string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "New" => "bg-secondary",
+            "Read" => "bg-info",
+            "Replied" => "bg-success",
+            "Archived" => "bg-warning",
+            _ => "bg-secondary"
+        };
+    }
+
+    string GetStatusText(string status)
+    {
+        return status switch
+        {
+            "New" => "Nova",
+            "Read" => "Lida",
+            "Replied" => "Respondida",
+            "Archived" => "Arquivada",
+            _ => status
+        };
+    }
+}

@@ -1,0 +1,93 @@
+@model Nossa_TV.ViewModels.UserMessageHistoryViewModel
+@{
+    ViewData["Title"] = "Minhas Mensagens";
+}
+
+<div class="container my-5">
+    <h2 class="mb-4">Minhas Mensagens</h2>
+
+    @if (Model.UnreadReplies > 0)
+    {
+        <div class="alert alert-info" role="alert">
+            <i class="bi bi-bell-fill me-2"></i>Você tem @Model.UnreadReplies nova(s) resposta(s)!
+        </div>
+    }
+
+    @if (Model.Messages.Count == 0)
+    {
+        <div class="text-center py-5">
+            <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+            <p class="text-muted mt-3">Você ainda não enviou nenhuma mensagem.</p>
+            <a asp-action="Send" class="btn btn-primary">
+                <i class="bi bi-send me-2"></i>Enviar Primeira Mensagem
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var message in Model.Messages)
+            {
+                <div class="col-12 mb-3">
+                    <div class="card @(message.HasReplies && message.Status != "Read" ? "border-primary" : "")">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h5 class="card-title">
+                                        @message.Subject
+                                        @if (message.HasReplies)
+                                        {
+                                            <span class="badge bg-success ms-2">@message.ReplyCount resposta(s)</span>
+                                        }
+                                    </h5>
+                                    <p class="card-text text-muted small">
+                                        <i class="bi bi-calendar me-1"></i>@message.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                    </p>
+                                </div>
+                                <div>
+                                    <span class="badge @GetStatusBadgeClass(message.Status)">@GetStatusText(message.Status)</span>
+                                </div>
+                            </div>
+                            <p class="card-text mt-2">@message.MessageContent</p>
+                            <a asp-action="Detail" asp-route-id="@message.Id" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye me-1"></i>Ver Detalhes
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="text-center mt-4">
+            <a asp-action="Send" class="btn btn-primary">
+                <i class="bi bi-send me-2"></i>Enviar Nova Mensagem
+            </a>
+        </div>
+    }
+</div>
+
+@functions {
+    string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "New" => "bg-secondary",
+            "Read" => "bg-info",
+            "Replied" => "bg-success",
+            "Archived" => "bg-warning",
+            _ => "bg-secondary"
+        };
+    }
+
+    string GetStatusText(string status)
+    {
+        return status switch
+        {
+            "New" => "Nova",
+            "Read" => "Lida",
+            "Replied" => "Respondida",
+            "Archived" => "Arquivada",
+            _ => status
+        };
+    }
+}

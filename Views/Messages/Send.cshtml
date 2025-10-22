@@ -1,0 +1,94 @@
+@model Nossa_TV.ViewModels.SendMessageViewModel
+@{
+    ViewData["Title"] = "Enviar Mensagem";
+}
+
+<div class="container message-form-container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="message-form-card">
+                <div class="text-center mb-4">
+                    <i class="bi bi-envelope-heart" style="font-size: 3rem; color: var(--primary);"></i>
+                    <h2 class="mt-3">Entre em Contato</h2>
+                    <p class="text-muted">Estamos aqui para ajudar! Envie sua mensagem e responderemos em breve.</p>
+                </div>
+
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Por favor, corrija os erros abaixo.
+                    </div>
+                }
+
+                <form asp-action="Send" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-3">
+                        <label asp-for="SenderName" class="form-label">
+                            <i class="bi bi-person"></i> Nome Completo *
+                        </label>
+                        <input asp-for="SenderName" class="form-control form-control-lg" placeholder="Seu nome completo" />
+                        <span asp-validation-for="SenderName" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="SenderEmail" class="form-label">
+                            <i class="bi bi-envelope"></i> Email *
+                        </label>
+                        <input asp-for="SenderEmail" type="email" class="form-control form-control-lg" placeholder="seu@email.com" />
+                        <span asp-validation-for="SenderEmail" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Phone" class="form-label">
+                            <i class="bi bi-phone"></i> Telefone
+                        </label>
+                        <input asp-for="Phone" class="form-control form-control-lg" placeholder="(00) 00000-0000" />
+                        <span asp-validation-for="Phone" class="text-danger"></span>
+                        <small class="text-muted">Opcional - caso prefira contato por telefone</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Subject" class="form-label">
+                            <i class="bi bi-tag"></i> Assunto *
+                        </label>
+                        <input asp-for="Subject" class="form-control form-control-lg" placeholder="Qual o assunto da sua mensagem?" />
+                        <span asp-validation-for="Subject" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="MessageContent" class="form-label">
+                            <i class="bi bi-chat-left-text"></i> Mensagem *
+                        </label>
+                        <textarea asp-for="MessageContent" class="form-control form-control-lg" rows="6" placeholder="Digite sua mensagem aqui... Quanto mais detalhes, melhor poderemos ajudá-lo!"></textarea>
+                        <span asp-validation-for="MessageContent" class="text-danger"></span>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-send me-2"></i>Enviar Mensagem
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mt-4 text-center">
+                    <a asp-action="MyMessages" class="btn btn-link">
+                        <i class="bi bi-inbox me-1"></i>Ver minhas mensagens anteriores
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
