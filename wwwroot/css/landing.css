@@ -1,6 +1,6 @@
 /* Header height variable to offset fixed header */
 :root {
-    --header-height: 110px; /* increased to push content further down */
+    --header-height: 79px; /* reduced by 20% (99px * 0.8 = 79.2px, rounded to 79px) */
 }
 
 /* Ensure main content is pushed below the fixed header */
@@ -11,7 +11,7 @@ main {
 /* Mobile adjustment: header may be taller when mobile menu is toggled */
 @media (max-width: 768px) {
     :root {
-        --header-height: 128px; /* increased for mobile */
+        --header-height: 92px; /* reduced by 20% (115px * 0.8 = 92px) */
     }
     main {
         padding-top: var(--header-height);
@@ -177,7 +177,7 @@ button {
     z-index: 1000;
     background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    border-bottom: none;
     transition: var(--transition-base);
 }
 
@@ -187,7 +187,7 @@ button {
 }
 
 .navbar {
-    padding: var(--spacing-sm) 0;
+    padding: 0.5rem 0;
 }
 
 .nav-container {
@@ -335,7 +335,6 @@ button {
     align-items: center;
     background: var(--gradient-hero);
     overflow: hidden;
-    padding-top: var(--header-height); /* use variable so it's consistent */
 }
 
 .particles-bg {
