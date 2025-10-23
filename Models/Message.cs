@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 namespace Nossa_TV.Models
@@ -5,42 +7,44 @@ namespace Nossa_TV.Models
     /// <summary>
     /// Representa uma mensagem enviada por um usuário
     /// </summary>
+    [Table("messages")]
     public class Message
     {
-        [JsonPropertyName("objectId")]
-        public string? ObjectId { get; set; }
+        [Key]
+        [JsonPropertyName("id")]
+        public string Id { get; set; } = Guid.NewGuid().ToString();
 
-        [JsonPropertyName("userId")]
+        [JsonPropertyName("user_id")]
         public string? UserId { get; set; }
 
-        [JsonPropertyName("senderName")]
+        [JsonPropertyName("sender_name")]
         public string SenderName { get; set; } = string.Empty;
 
-        [JsonPropertyName("senderEmail")]
+        [JsonPropertyName("sender_email")]
         public string SenderEmail { get; set; } = string.Empty;
 
         [JsonPropertyName("subject")]
         public string Subject { get; set; } = string.Empty;
 
-        [JsonPropertyName("messageContent")]
+        [JsonPropertyName("message_content")]
         public string MessageContent { get; set; } = string.Empty;
 
         [JsonPropertyName("status")]
-        public string Status { get; set; } = MessageStatus.New.ToString();
+        public string Status { get; set; } = "New";
 
-        [JsonPropertyName("isRead")]
+        [JsonPropertyName("is_read")]
         public bool IsRead { get; set; }
 
-        [JsonPropertyName("readAt")]
+        [JsonPropertyName("read_at")]
         public DateTime? ReadAt { get; set; }
 
-        [JsonPropertyName("repliedAt")]
+        [JsonPropertyName("replied_at")]
         public DateTime? RepliedAt { get; set; }
 
-        [JsonPropertyName("createdAt")]
-        public DateTime? CreatedAt { get; set; }
+        [JsonPropertyName("created_at")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        [JsonPropertyName("updatedAt")]
+        [JsonPropertyName("updated_at")]
         public DateTime? UpdatedAt { get; set; }
     }
 }

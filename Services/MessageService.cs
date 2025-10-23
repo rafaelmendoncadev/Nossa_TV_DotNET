@@ -1,22 +1,20 @@
 using Nossa_TV.Models;
 using Nossa_TV.ViewModels;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore;
 
 namespace Nossa_TV.Services
 {
     /// <summary>
-    /// Serviço para gerenciamento de mensagens usando Back4App REST API
+    /// Serviço para gerenciamento de mensagens usando EF Core (SQLite)
     /// </summary>
     public class MessageService : IMessageService
     {
-        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly Data.ApplicationDbContext _db;
         private readonly ILeadService _leadService;
 
-        public MessageService(IHttpClientFactory httpClientFactory, ILeadService leadService)
+        public MessageService(Data.ApplicationDbContext db, ILeadService leadService)
         {
-            _httpClientFactory = httpClientFactory;
+            _db = db;
             _leadService = leadService;
         }
 
@@ -24,32 +22,25 @@ namespace Nossa_TV.Services
         {
             try
             {
-                var client = _httpClientFactory.CreateClient("Back4App");
-                
-                var message = new
+                var message = new Message
                 {
-                    userId,
-                    senderName = model.SenderName,
-                    senderEmail = model.SenderEmail,
-                    subject = model.Subject,
-                    messageContent = model.MessageContent,
-                    status = MessageStatus.New.ToString(),
-                    isRead = false
+                    UserId = userId,
+                    SenderName = model.SenderName,
+                    SenderEmail = model.SenderEmail,
+                    Subject = model.Subject,
+                    MessageContent = model.MessageContent,
+                    Status = MessageStatus.New.ToString(),
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow
                 };
 
-                var json = JsonSerializer.Serialize(message);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-                
-                var response = await client.PostAsync("classes/Message", content);
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    // Capturar ou atualizar lead
-                    await _leadService.CaptureLeadAsync(model.SenderName, model.SenderEmail, model.Phone);
-                    return true;
-                }
+                _db.Messages.Add(message);
+                await _db.SaveChangesAsync();
 
-                return false;
+                // Capturar ou atualizar lead
+                await _leadService.CaptureLeadAsync(model.SenderName, model.SenderEmail, model.Phone);
+
+                return true;
             }
             catch
             {
@@ -61,52 +52,39 @@ namespace Nossa_TV.Services
         {
             try
             {
-                var client = _httpClientFactory.CreateClient("Back4App");
-                
-                var where = new Dictionary<string, object>();
+                var query = _db.Messages.AsQueryable();
+
                 if (!string.IsNullOrEmpty(statusFilter))
-                {
-                    where["status"] = statusFilter;
-                }
+                    query = query.Where(x => x.Status == statusFilter);
+
                 if (dateFilter.HasValue)
                 {
-                    var startOfDay = dateFilter.Value.Date;
-                    var endOfDay = startOfDay.AddDays(1);
-                    where["createdAt"] = new
-                    {
-                        __op = "GreaterThanOrEqualTo",
-                        __iso = startOfDay.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-                    };
+                    var start = dateFilter.Value.Date;
+                    var end = start.AddDays(1);
+                    query = query.Where(x => x.CreatedAt >= start && x.CreatedAt < end);
                 }
 
-                var skip = (page - 1) * pageSize;
-                var queryString = $"?order=-createdAt&limit={pageSize}&skip={skip}";
-                if (where.Count > 0)
+                query = query.OrderByDescending(x => x.CreatedAt);
+
+                var totalCount = await query.CountAsync();
+
+                var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+                var messages = items.Select(m => new MessageListItemViewModel
                 {
-                    queryString += $"&where={Uri.EscapeDataString(JsonSerializer.Serialize(where))}";
-                }
-
-                var response = await client.GetAsync($"classes/Message{queryString}");
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<ParseResponse<Message>>(jsonResponse);
-
-                // Buscar estatísticas
-                var totalCount = result?.Results?.Count ?? 0;
-                var unreadCount = await GetCountAsync("Message", new { isRead = false });
-                var newCount = await GetCountAsync("Message", new { status = MessageStatus.New.ToString() });
-                var repliedCount = await GetCountAsync("Message", new { status = MessageStatus.Replied.ToString() });
-
-                var messages = result?.Results?.Select(m => new MessageListItemViewModel
-                {
-                    Id = m.ObjectId ?? "",
+                    Id = m.Id,
                     SenderName = m.SenderName,
                     SenderEmail = m.SenderEmail,
                     Subject = m.Subject,
                     Status = m.Status,
                     IsRead = m.IsRead,
-                    CreatedAt = m.CreatedAt ?? DateTime.Now,
+                    CreatedAt = m.CreatedAt,
                     RepliedAt = m.RepliedAt
-                }).ToList() ?? new List<MessageListItemViewModel>();
+                }).ToList();
+
+                var unreadCount = await _db.Messages.CountAsync(x => x.IsRead == false);
+                var newCount = await _db.Messages.CountAsync(x => x.Status == MessageStatus.New.ToString());
+                var repliedCount = await _db.Messages.CountAsync(x => x.Status == MessageStatus.Replied.ToString());
 
                 return new AdminMessageListViewModel
                 {
@@ -131,33 +109,22 @@ namespace Nossa_TV.Services
         {
             try
             {
-                var client = _httpClientFactory.CreateClient("Back4App");
-                
-                var response = await client.GetAsync($"classes/Message/{messageId}");
-                if (!response.IsSuccessStatusCode) return null;
-
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                var message = JsonSerializer.Deserialize<Message>(jsonResponse);
+                var message = await _db.Messages.FindAsync(messageId);
                 if (message == null) return null;
 
-                // Buscar respostas
-                var repliesWhere = new { messageId };
-                var repliesQuery = $"?where={Uri.EscapeDataString(JsonSerializer.Serialize(repliesWhere))}&order=createdAt";
-                var repliesResponse = await client.GetAsync($"classes/MessageReply{repliesQuery}");
-                var repliesJson = await repliesResponse.Content.ReadAsStringAsync();
-                var repliesResult = JsonSerializer.Deserialize<ParseResponse<MessageReply>>(repliesJson);
+                var replies = await _db.MessageReplies.Where(r => r.MessageId == messageId).OrderBy(r => r.CreatedAt).ToListAsync();
 
-                var replyViewModels = repliesResult?.Results?.Select(r => new MessageReplyViewModel
+                var replyViewModels = replies.Select(r => new MessageReplyViewModel
                 {
-                    Id = r.ObjectId ?? "",
+                    Id = r.Id,
                     AdminUserId = r.AdminUserId,
                     ReplyContent = r.ReplyContent,
-                    CreatedAt = r.CreatedAt ?? DateTime.Now
-                }).ToList() ?? new List<MessageReplyViewModel>();
+                    CreatedAt = r.CreatedAt
+                }).ToList();
 
                 return new AdminMessageDetailViewModel
                 {
-                    Id = message.ObjectId ?? "",
+                    Id = message.Id,
                     UserId = message.UserId,
                     SenderName = message.SenderName,
                     SenderEmail = message.SenderEmail,
@@ -165,7 +132,7 @@ namespace Nossa_TV.Services
                     MessageContent = message.MessageContent,
                     Status = message.Status,
                     IsRead = message.IsRead,
-                    CreatedAt = message.CreatedAt ?? DateTime.Now,
+                    CreatedAt = message.CreatedAt,
                     ReadAt = message.ReadAt,
                     RepliedAt = message.RepliedAt,
                     Replies = replyViewModels
@@ -181,38 +148,25 @@ namespace Nossa_TV.Services
         {
             try
             {
-                var client = _httpClientFactory.CreateClient("Back4App");
+                var message = await _db.Messages.FindAsync(messageId);
+                if (message == null) return false;
 
-                // Criar resposta
-                var reply = new
+                var reply = new MessageReply
                 {
-                    messageId,
-                    adminUserId,
-                    replyContent
+                    MessageId = messageId,
+                    AdminUserId = adminUserId,
+                    ReplyContent = replyContent,
+                    CreatedAt = DateTime.UtcNow
                 };
 
-                var replyJson = JsonSerializer.Serialize(reply);
-                var replyResponse = await client.PostAsync("classes/MessageReply", 
-                    new StringContent(replyJson, Encoding.UTF8, "application/json"));
+                _db.MessageReplies.Add(reply);
 
-                if (!replyResponse.IsSuccessStatusCode) return false;
+                message.Status = MessageStatus.Replied.ToString();
+                message.RepliedAt = DateTime.UtcNow;
 
-                // Atualizar mensagem
-                var update = new
-                {
-                    status = MessageStatus.Replied.ToString(),
-                    repliedAt = new
-                    {
-                        __type = "Date",
-                        iso = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-                    }
-                };
+                await _db.SaveChangesAsync();
 
-                var updateJson = JsonSerializer.Serialize(update);
-                var updateResponse = await client.PutAsync($"classes/Message/{messageId}",
-                    new StringContent(updateJson, Encoding.UTF8, "application/json"));
-
-                return updateResponse.IsSuccessStatusCode;
+                return true;
             }
             catch
             {
@@ -224,24 +178,16 @@ namespace Nossa_TV.Services
         {
             try
             {
-                var client = _httpClientFactory.CreateClient("Back4App");
+                var message = await _db.Messages.FindAsync(messageId);
+                if (message == null) return false;
 
-                var update = new
-                {
-                    isRead = true,
-                    readAt = new
-                    {
-                        __type = "Date",
-                        iso = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-                    },
-                    status = MessageStatus.Read.ToString()
-                };
+                message.IsRead = true;
+                message.ReadAt = DateTime.UtcNow;
+                message.Status = MessageStatus.Read.ToString();
 
-                var json = JsonSerializer.Serialize(update);
-                var response = await client.PutAsync($"classes/Message/{messageId}",
-                    new StringContent(json, Encoding.UTF8, "application/json"));
+                await _db.SaveChangesAsync();
 
-                return response.IsSuccessStatusCode;
+                return true;
             }
             catch
             {
@@ -253,14 +199,14 @@ namespace Nossa_TV.Services
         {
             try
             {
-                var client = _httpClientFactory.CreateClient("Back4App");
+                var message = await _db.Messages.FindAsync(messageId);
+                if (message == null) return false;
 
-                var update = new { status = MessageStatus.Archived.ToString() };
-                var json = JsonSerializer.Serialize(update);
-                var response = await client.PutAsync($"classes/Message/{messageId}",
-                    new StringContent(json, Encoding.UTF8, "application/json"));
+                message.Status = MessageStatus.Archived.ToString();
 
-                return response.IsSuccessStatusCode;
+                await _db.SaveChangesAsync();
+
+                return true;
             }
             catch
             {
@@ -272,29 +218,18 @@ namespace Nossa_TV.Services
         {
             try
             {
-                var client = _httpClientFactory.CreateClient("Back4App");
+                var replies = _db.MessageReplies.Where(x => x.MessageId == messageId);
+                _db.MessageReplies.RemoveRange(replies);
 
-                // Deletar respostas associadas
-                var repliesWhere = new { messageId };
-                var repliesQuery = $"?where={Uri.EscapeDataString(JsonSerializer.Serialize(repliesWhere))}";
-                var repliesResponse = await client.GetAsync($"classes/MessageReply{repliesQuery}");
-                
-                if (repliesResponse.IsSuccessStatusCode)
+                var message = await _db.Messages.FindAsync(messageId);
+                if (message != null)
                 {
-                    var repliesJson = await repliesResponse.Content.ReadAsStringAsync();
-                    var repliesResult = JsonSerializer.Deserialize<ParseResponse<MessageReply>>(repliesJson);
-                    
-                    if (repliesResult?.Results != null)
-                    {
-                        foreach (var reply in repliesResult.Results)
-                        {
-                            await client.DeleteAsync($"classes/MessageReply/{reply.ObjectId}");
-                        }
-                    }
+                    _db.Messages.Remove(message);
                 }
 
-                var response = await client.DeleteAsync($"classes/Message/{messageId}");
-                return response.IsSuccessStatusCode;
+                await _db.SaveChangesAsync();
+
+                return true;
             }
             catch
             {
@@ -306,39 +241,25 @@ namespace Nossa_TV.Services
         {
             try
             {
-                var client = _httpClientFactory.CreateClient("Back4App");
-                
-                var where = new { userId };
-                var queryString = $"?where={Uri.EscapeDataString(JsonSerializer.Serialize(where))}&order=-createdAt";
-                
-                var response = await client.GetAsync($"classes/Message{queryString}");
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<ParseResponse<Message>>(jsonResponse);
+                var response = await _db.Messages.Where(x => x.UserId == userId).OrderByDescending(x => x.CreatedAt).ToListAsync();
 
                 var messages = new List<UserMessageItemViewModel>();
 
-                if (result?.Results != null)
+                foreach (var message in response)
                 {
-                    foreach (var message in result.Results)
-                    {
-                        var repliesWhere = new { messageId = message.ObjectId };
-                        var repliesQuery = $"?where={Uri.EscapeDataString(JsonSerializer.Serialize(repliesWhere))}&count=1&limit=0";
-                        var repliesResponse = await client.GetAsync($"classes/MessageReply{repliesQuery}");
-                        var repliesJson = await repliesResponse.Content.ReadAsStringAsync();
-                        var repliesCount = JsonSerializer.Deserialize<ParseCountResponse>(repliesJson);
+                    var replyCount = await _db.MessageReplies.CountAsync(x => x.MessageId == message.Id);
 
-                        messages.Add(new UserMessageItemViewModel
-                        {
-                            Id = message.ObjectId ?? "",
-                            Subject = message.Subject,
-                            MessageContent = message.MessageContent,
-                            Status = message.Status,
-                            CreatedAt = message.CreatedAt ?? DateTime.Now,
-                            RepliedAt = message.RepliedAt,
-                            HasReplies = (repliesCount?.Count ?? 0) > 0,
-                            ReplyCount = repliesCount?.Count ?? 0
-                        });
-                    }
+                    messages.Add(new UserMessageItemViewModel
+                    {
+                        Id = message.Id,
+                        Subject = message.Subject,
+                        MessageContent = message.MessageContent,
+                        Status = message.Status,
+                        CreatedAt = message.CreatedAt,
+                        RepliedAt = message.RepliedAt,
+                        HasReplies = replyCount > 0,
+                        ReplyCount = replyCount
+                    });
                 }
 
                 return new UserMessageHistoryViewModel
@@ -356,53 +277,20 @@ namespace Nossa_TV.Services
 
         public async Task<Dictionary<string, int>> GetDashboardStatsAsync()
         {
-            var stats = new Dictionary<string, int>
+            var total = await _db.Messages.CountAsync();
+            var unread = await _db.Messages.CountAsync(x => x.IsRead == false);
+            var New = await _db.Messages.CountAsync(x => x.Status == MessageStatus.New.ToString());
+            var replied = await _db.Messages.CountAsync(x => x.Status == MessageStatus.Replied.ToString());
+            var archived = await _db.Messages.CountAsync(x => x.Status == MessageStatus.Archived.ToString());
+
+            return new Dictionary<string, int>
             {
-                ["Total"] = await GetCountAsync("Message", null),
-                ["Unread"] = await GetCountAsync("Message", new { isRead = false }),
-                ["New"] = await GetCountAsync("Message", new { status = MessageStatus.New.ToString() }),
-                ["Replied"] = await GetCountAsync("Message", new { status = MessageStatus.Replied.ToString() }),
-                ["Archived"] = await GetCountAsync("Message", new { status = MessageStatus.Archived.ToString() })
+                ["Total"] = total,
+                ["Unread"] = unread,
+                ["New"] = New,
+                ["Replied"] = replied,
+                ["Archived"] = archived
             };
-
-            return stats;
         }
-
-        private async Task<int> GetCountAsync(string className, object? where)
-        {
-            try
-            {
-                var client = _httpClientFactory.CreateClient("Back4App");
-                var queryString = "?count=1&limit=0";
-                
-                if (where != null)
-                {
-                    queryString += $"&where={Uri.EscapeDataString(JsonSerializer.Serialize(where))}";
-                }
-
-                var response = await client.GetAsync($"classes/{className}{queryString}");
-                var json = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<ParseCountResponse>(json);
-                
-                return result?.Count ?? 0;
-            }
-            catch
-            {
-                return 0;
-            }
-        }
-    }
-
-    // Classes auxiliares para desserialização
-    public class ParseResponse<T>
-    {
-        [JsonPropertyName("results")]
-        public List<T>? Results { get; set; }
-    }
-
-    public class ParseCountResponse
-    {
-        [JsonPropertyName("count")]
-        public int Count { get; set; }
     }
 }

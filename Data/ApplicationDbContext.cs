@@ -14,11 +14,18 @@ namespace Nossa_TV.Data
         {
         }
 
+        public DbSet<Message> Messages { get; set; } = null!;
+        public DbSet<MessageReply> MessageReplies { get; set; } = null!;
+        public DbSet<Lead> Leads { get; set; } = null!;
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
-            
-            // Customizações adicionais do modelo podem ser feitas aqui
+
+            // Defaults and mapping
+            builder.Entity<Message>().Property(m => m.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            builder.Entity<MessageReply>().Property(r => r.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            builder.Entity<Lead>().Property(l => l.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         }
     }
 }

@@ -41,15 +41,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
-// Configurar HttpClient para Back4App
-builder.Services.AddHttpClient("Back4App", client =>
-{
-    client.BaseAddress = new Uri("https://parseapi.back4app.com/");
-    client.DefaultRequestHeaders.Add("X-Parse-Application-Id", "z4XT6b7pn6D6TwfLjAkVImWCI6txKKF5fBJ9m2O3");
-    client.DefaultRequestHeaders.Add("X-Parse-REST-API-Key", "oxumxDTkBG21lfrZC1xuXpwc2F1975cSq54OGhVp");
-});
-
-// Registrar serviços
+// Registrar serviços (usando SQLite/EF Core)
 builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<ILeadService, LeadService>();
 
@@ -76,7 +68,7 @@ using (var scope = app.Services.CreateScope())
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         
-        await context.Database.EnsureCreatedAsync();
+        await context.Database.MigrateAsync();
         
         // Criar roles se não existirem
         if (!await roleManager.RoleExistsAsync("Admin"))

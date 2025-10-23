@@ -1,83 +1,56 @@
 using Nossa_TV.Models;
 using Nossa_TV.ViewModels;
+using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Nossa_TV.Services
 {
     /// <summary>
-    /// Serviço para gerenciamento de leads usando Back4App REST API
+    /// Serviço para gerenciamento de leads usando EF Core (SQLite)
     /// </summary>
     public class LeadService : ILeadService
     {
-        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly Data.ApplicationDbContext _db;
 
-        public LeadService(IHttpClientFactory httpClientFactory)
+        public LeadService(Data.ApplicationDbContext db)
         {
-            _httpClientFactory = httpClientFactory;
+            _db = db;
         }
 
         public async Task<bool> CaptureLeadAsync(string name, string email, string? phone = null)
         {
             try
             {
-                var client = _httpClientFactory.CreateClient("Back4App");
+                var existing = await _db.Leads.FirstOrDefaultAsync(l => l.Email == email);
 
-                // Verificar se o lead já existe
-                var where = new { email };
-                var queryString = $"?where={Uri.EscapeDataString(JsonSerializer.Serialize(where))}";
-                
-                var response = await client.GetAsync($"classes/Lead{queryString}");
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<ParseResponse<Lead>>(jsonResponse);
-
-                if (result?.Results != null && result.Results.Any())
+                if (existing != null)
                 {
-                    // Atualizar lead existente
-                    var existingLead = result.Results.First();
-                    var update = new
-                    {
-                        lastContactDate = new
-                        {
-                            __type = "Date",
-                            iso = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-                        },
-                        messageCount = existingLead.MessageCount + 1,
-                        phone = !string.IsNullOrEmpty(phone) && string.IsNullOrEmpty(existingLead.Phone) ? phone : existingLead.Phone
-                    };
+                    existing.LastContactDate = DateTime.UtcNow;
+                    existing.MessageCount = existing.MessageCount + 1;
+                    if (!string.IsNullOrEmpty(phone) && string.IsNullOrEmpty(existing.Phone))
+                        existing.Phone = phone;
 
-                    var updateJson = JsonSerializer.Serialize(update);
-                    await client.PutAsync($"classes/Lead/{existingLead.ObjectId}",
-                        new StringContent(updateJson, Encoding.UTF8, "application/json"));
+                    _db.Leads.Update(existing);
                 }
                 else
                 {
-                    // Criar novo lead
-                    var newLead = new
+                    var newLead = new Lead
                     {
-                        name,
-                        email,
-                        phone,
-                        firstContactDate = new
-                        {
-                            __type = "Date",
-                            iso = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-                        },
-                        lastContactDate = new
-                        {
-                            __type = "Date",
-                            iso = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-                        },
-                        messageCount = 1,
-                        tags = new List<string>()
+                        Name = name,
+                        Email = email,
+                        Phone = phone,
+                        FirstContactDate = DateTime.UtcNow,
+                        LastContactDate = DateTime.UtcNow,
+                        MessageCount = 1,
+                        Tags = new List<string>(),
+                        CreatedAt = DateTime.UtcNow
                     };
 
-                    var json = JsonSerializer.Serialize(newLead);
-                    await client.PostAsync("classes/Lead",
-                        new StringContent(json, Encoding.UTF8, "application/json"));
+                    _db.Leads.Add(newLead);
                 }
 
+                await _db.SaveChangesAsync();
                 return true;
             }
             catch
@@ -90,50 +63,23 @@ namespace Nossa_TV.Services
         {
             try
             {
-                var client = _httpClientFactory.CreateClient("Back4App");
-                
-                var skip = (page - 1) * pageSize;
-                var queryString = $"?order=-lastContactDate&limit={pageSize}&skip={skip}";
+                var query = _db.Leads.AsQueryable();
 
-                // Aplicar filtros se necessário
-                if (!string.IsNullOrEmpty(searchTerm) || !string.IsNullOrEmpty(tagFilter))
+                if (!string.IsNullOrEmpty(searchTerm))
+                    query = query.Where(l => l.Email.Contains(searchTerm) || l.Name.Contains(searchTerm));
+
+                if (!string.IsNullOrEmpty(tagFilter))
+                    query = query.Where(l => l.Tags != null && l.Tags.Contains(tagFilter));
+
+                query = query.OrderByDescending(l => l.LastContactDate);
+
+                var total = await query.CountAsync();
+
+                var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+                var leads = items.Select(l => new LeadItemViewModel
                 {
-                    var where = new Dictionary<string, object>();
-                    
-                    if (!string.IsNullOrEmpty(searchTerm))
-                    {
-                        // Busca simples por email (Back4App suporta regex)
-                        where["email"] = new
-                        {
-                            __regex = searchTerm,
-                            __options = "i"
-                        };
-                    }
-
-                    if (!string.IsNullOrEmpty(tagFilter))
-                    {
-                        where["tags"] = tagFilter;
-                    }
-
-                    if (where.Count > 0)
-                    {
-                        queryString += $"&where={Uri.EscapeDataString(JsonSerializer.Serialize(where))}";
-                    }
-                }
-
-                var response = await client.GetAsync($"classes/Lead{queryString}");
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<ParseResponse<Lead>>(jsonResponse);
-
-                // Contar total
-                var countQuery = "?count=1&limit=0";
-                var countResponse = await client.GetAsync($"classes/Lead{countQuery}");
-                var countJson = await countResponse.Content.ReadAsStringAsync();
-                var countResult = JsonSerializer.Deserialize<ParseCountResponse>(countJson);
-
-                var leads = result?.Results?.Select(l => new LeadItemViewModel
-                {
-                    Id = l.ObjectId ?? "",
+                    Id = l.Id,
                     Name = l.Name,
                     Email = l.Email,
                     Phone = l.Phone,
@@ -141,12 +87,12 @@ namespace Nossa_TV.Services
                     LastContactDate = l.LastContactDate,
                     MessageCount = l.MessageCount,
                     Tags = l.Tags
-                }).ToList() ?? new List<LeadItemViewModel>();
+                }).ToList();
 
                 return new LeadListViewModel
                 {
                     Leads = leads,
-                    TotalLeads = countResult?.Count ?? 0,
+                    TotalLeads = total,
                     CurrentPage = page,
                     PageSize = pageSize,
                     SearchTerm = searchTerm,
@@ -163,50 +109,31 @@ namespace Nossa_TV.Services
         {
             try
             {
-                var client = _httpClientFactory.CreateClient("Back4App");
-                
-                var response = await client.GetAsync($"classes/Lead/{leadId}");
-                if (!response.IsSuccessStatusCode) return null;
-
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                var lead = JsonSerializer.Deserialize<Lead>(jsonResponse);
+                var lead = await _db.Leads.FindAsync(leadId);
                 if (lead == null) return null;
 
-                // Buscar mensagens do lead
-                var messagesWhere = new { senderEmail = lead.Email };
-                var messagesQuery = $"?where={Uri.EscapeDataString(JsonSerializer.Serialize(messagesWhere))}&order=-createdAt";
-                
-                var messagesResponse = await client.GetAsync($"classes/Message{messagesQuery}");
-                var messagesJson = await messagesResponse.Content.ReadAsStringAsync();
-                var messagesResult = JsonSerializer.Deserialize<ParseResponse<Message>>(messagesJson);
+                var messages = await _db.Messages.Where(m => m.SenderEmail == lead.Email).OrderByDescending(m => m.CreatedAt).ToListAsync();
 
                 var messageViewModels = new List<LeadMessageViewModel>();
 
-                if (messagesResult?.Results != null)
+                foreach (var message in messages)
                 {
-                    foreach (var message in messagesResult.Results)
-                    {
-                        var repliesWhere = new { messageId = message.ObjectId };
-                        var repliesQuery = $"?where={Uri.EscapeDataString(JsonSerializer.Serialize(repliesWhere))}&count=1&limit=0";
-                        var repliesResponse = await client.GetAsync($"classes/MessageReply{repliesQuery}");
-                        var repliesJson = await repliesResponse.Content.ReadAsStringAsync();
-                        var repliesCount = JsonSerializer.Deserialize<ParseCountResponse>(repliesJson);
+                    var replyCount = await _db.MessageReplies.CountAsync(r => r.MessageId == message.Id);
 
-                        messageViewModels.Add(new LeadMessageViewModel
-                        {
-                            Id = message.ObjectId ?? "",
-                            Subject = message.Subject,
-                            MessageContent = message.MessageContent,
-                            Status = message.Status,
-                            CreatedAt = message.CreatedAt ?? DateTime.Now,
-                            ReplyCount = repliesCount?.Count ?? 0
-                        });
-                    }
+                    messageViewModels.Add(new LeadMessageViewModel
+                    {
+                        Id = message.Id,
+                        Subject = message.Subject,
+                        MessageContent = message.MessageContent,
+                        Status = message.Status,
+                        CreatedAt = message.CreatedAt,
+                        ReplyCount = replyCount
+                    });
                 }
 
                 return new LeadDetailViewModel
                 {
-                    Id = lead.ObjectId ?? "",
+                    Id = lead.Id,
                     Name = lead.Name,
                     Email = lead.Email,
                     Phone = lead.Phone,
@@ -228,28 +155,16 @@ namespace Nossa_TV.Services
         {
             try
             {
-                var client = _httpClientFactory.CreateClient("Back4App");
-
-                // Buscar lead atual
-                var response = await client.GetAsync($"classes/Lead/{leadId}");
-                if (!response.IsSuccessStatusCode) return false;
-
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                var lead = JsonSerializer.Deserialize<Lead>(jsonResponse);
+                var lead = await _db.Leads.FindAsync(leadId);
                 if (lead == null) return false;
 
                 var tags = lead.Tags ?? new List<string>();
-                
                 if (!tags.Contains(tag))
                 {
                     tags.Add(tag);
-                    var update = new { tags };
-                    var updateJson = JsonSerializer.Serialize(update);
-                    
-                    var updateResponse = await client.PutAsync($"classes/Lead/{leadId}",
-                        new StringContent(updateJson, Encoding.UTF8, "application/json"));
-                    
-                    return updateResponse.IsSuccessStatusCode;
+                    lead.Tags = tags;
+                    _db.Leads.Update(lead);
+                    await _db.SaveChangesAsync();
                 }
 
                 return true;
@@ -264,28 +179,16 @@ namespace Nossa_TV.Services
         {
             try
             {
-                var client = _httpClientFactory.CreateClient("Back4App");
-
-                // Buscar lead atual
-                var response = await client.GetAsync($"classes/Lead/{leadId}");
-                if (!response.IsSuccessStatusCode) return false;
-
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                var lead = JsonSerializer.Deserialize<Lead>(jsonResponse);
+                var lead = await _db.Leads.FindAsync(leadId);
                 if (lead == null) return false;
 
                 var tags = lead.Tags ?? new List<string>();
-                
                 if (tags.Contains(tag))
                 {
                     tags.Remove(tag);
-                    var update = new { tags };
-                    var updateJson = JsonSerializer.Serialize(update);
-                    
-                    var updateResponse = await client.PutAsync($"classes/Lead/{leadId}",
-                        new StringContent(updateJson, Encoding.UTF8, "application/json"));
-                    
-                    return updateResponse.IsSuccessStatusCode;
+                    lead.Tags = tags;
+                    _db.Leads.Update(lead);
+                    await _db.SaveChangesAsync();
                 }
 
                 return true;
@@ -300,15 +203,14 @@ namespace Nossa_TV.Services
         {
             try
             {
-                var client = _httpClientFactory.CreateClient("Back4App");
+                var lead = await _db.Leads.FindAsync(leadId);
+                if (lead == null) return false;
 
-                var update = new { notes };
-                var json = JsonSerializer.Serialize(update);
-                
-                var response = await client.PutAsync($"classes/Lead/{leadId}",
-                    new StringContent(json, Encoding.UTF8, "application/json"));
+                lead.Notes = notes;
+                _db.Leads.Update(lead);
+                await _db.SaveChangesAsync();
 
-                return response.IsSuccessStatusCode;
+                return true;
             }
             catch
             {
@@ -320,30 +222,22 @@ namespace Nossa_TV.Services
         {
             try
             {
-                var client = _httpClientFactory.CreateClient("Back4App");
-                
-                var queryString = "?order=-lastContactDate&limit=1000";
-                var response = await client.GetAsync($"classes/Lead{queryString}");
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<ParseResponse<Lead>>(jsonResponse);
+                var leads = await _db.Leads.OrderByDescending(l => l.LastContactDate).Take(1000).ToListAsync();
 
                 var csv = new StringBuilder();
                 csv.AppendLine("Nome,Email,Telefone,Primeira Interação,Última Interação,Total de Mensagens,Tags");
 
-                if (result?.Results != null)
+                foreach (var lead in leads)
                 {
-                    foreach (var lead in result.Results)
-                    {
-                        var name = lead.Name.Replace("\"", "\"\"");
-                        var email = lead.Email.Replace("\"", "\"\"");
-                        var phone = (lead.Phone ?? "").Replace("\"", "\"\"");
-                        var firstContact = lead.FirstContactDate.ToString("dd/MM/yyyy");
-                        var lastContact = lead.LastContactDate.ToString("dd/MM/yyyy");
-                        var messageCount = lead.MessageCount;
-                        var tags = lead.Tags != null ? string.Join(";", lead.Tags).Replace("\"", "\"\"") : "";
+                    var name = (lead.Name ?? "").Replace("\"", "\"\"");
+                    var email = (lead.Email ?? "").Replace("\"", "\"\"");
+                    var phone = (lead.Phone ?? "").Replace("\"", "\"\"");
+                    var firstContact = lead.FirstContactDate.ToString("dd/MM/yyyy");
+                    var lastContact = lead.LastContactDate.ToString("dd/MM/yyyy");
+                    var messageCount = lead.MessageCount;
+                    var tags = lead.Tags != null ? string.Join(";", lead.Tags).Replace("\"", "\"\"") : "";
 
-                        csv.AppendLine($"\"{name}\",\"{email}\",\"{phone}\",\"{firstContact}\",\"{lastContact}\",{messageCount},\"{tags}\"");
-                    }
+                    csv.AppendLine($"\"{name}\",\"{email}\",\"{phone}\",\"{firstContact}\",\"{lastContact}\",{messageCount},\"{tags}\"");
                 }
 
                 return Encoding.UTF8.GetBytes(csv.ToString());
