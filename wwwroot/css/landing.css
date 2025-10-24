@@ -1,17 +1,18 @@
 /* Header height variable to offset fixed header */
 :root {
-    --header-height: 79px; /* reduced by 20% (99px * 0.8 = 79.2px, rounded to 79px) */
+    --header-height: 80px; /* altura correta considerando padding + conteúdo */
 }
 
 /* Ensure main content is pushed below the fixed header */
 main {
     padding-top: var(--header-height);
+    min-height: calc(100vh - var(--header-height));
 }
 
 /* Mobile adjustment: header may be taller when mobile menu is toggled */
 @media (max-width: 768px) {
     :root {
-        --header-height: 92px; /* reduced by 20% (115px * 0.8 = 92px) */
+        --header-height: 85px; /* ajuste para mobile */
     }
     main {
         padding-top: var(--header-height);
@@ -187,13 +188,17 @@ button {
 }
 
 .navbar {
-    padding: 0.5rem 0;
+    padding: 0.75rem 0;
+    min-height: 70px;
+    display: flex;
+    align-items: center;
 }
 
 .nav-container {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    width: 100%;
 }
 
 .logo {

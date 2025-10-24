@@ -2,6 +2,30 @@
 // ============================================
 
 // ============================================
+// Dynamic header height -> prevents header overlapping content
+// ============================================
+function updateHeaderOffset() {
+    try {
+        const header = document.querySelector('.main-header');
+        if (!header) return;
+        // Measure real header height and set CSS var used by layout (padding-top on main)
+        const height = Math.ceil(header.getBoundingClientRect().height);
+        if (height && height > 0) {
+            document.documentElement.style.setProperty('--header-height', `${height}px`);
+        }
+    } catch { /* noop */ }
+}
+
+// Run on early events and responsive changes
+window.addEventListener('DOMContentLoaded', updateHeaderOffset);
+window.addEventListener('load', updateHeaderOffset);
+window.addEventListener('resize', updateHeaderOffset);
+window.addEventListener('orientationchange', updateHeaderOffset);
+if (document.fonts && typeof document.fonts.ready?.then === 'function') {
+    document.fonts.ready.then(updateHeaderOffset);
+}
+
+// ============================================
 // Smooth Scroll
 // ============================================
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -11,7 +35,9 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             e.preventDefault();
             const target = document.querySelector(href);
             if (target) {
-                const headerOffset = 80;
+                // Use computed header height instead of a fixed value
+                const computed = getComputedStyle(document.documentElement).getPropertyValue('--header-height');
+                const headerOffset = parseFloat(computed) || 80;
                 const elementPosition = target.getBoundingClientRect().top;
                 const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
@@ -58,6 +84,8 @@ function toggleMobileMenu() {
     if (navMenu) {
         navMenu.classList.toggle('active');
         toggle.classList.toggle('active');
+        // Recalculate header offset in case header layout changes on mobile
+        updateHeaderOffset();
     }
 }
 
@@ -393,16 +421,23 @@ window.addEventListener('load', () => {
         }, 300);
     }
 
+    // Re-check header height after everything is loaded
+    updateHeaderOffset();
+
     // Log performance metrics
-    if (window.performance) {
+    if (window.performance && window.performance.timing) {
         const perfData = window.performance.timing;
         const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
-        console.log(`? Página carregada em ${pageLoadTime}ms`);
+        
+        // Only log if pageLoadTime is positive and reasonable
+        if (pageLoadTime > 0 && pageLoadTime < 600000) {
+            console.log(`? Página carregada em ${pageLoadTime}ms`);
+        }
     }
 });
 
 // ============================================
-// Service Worker Registration (PWA)
+// Service Worker Registration (PWA) - with better error handling
 // ============================================
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -411,7 +446,8 @@ if ('serviceWorker' in navigator) {
                 console.log('? Service Worker registrado:', registration);
             })
             .catch(error => {
-                console.log('? Erro ao registrar Service Worker:', error);
+                // Silently fail - Service Worker is optional
+                console.debug('Service Worker não disponível (opcional):', error.message);
             });
     });
 }

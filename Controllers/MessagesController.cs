@@ -76,5 +76,58 @@ namespace Nossa_TV.Controllers
 
             return View(message);
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize]
+        public async Task<IActionResult> Reply(string id, [FromForm] UserReplyViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["ErrorMessage"] = "Por favor, preencha todos os campos corretamente.";
+                return RedirectToAction("Detail", new { id });
+            }
+
+            // Obter a mensagem original
+            var originalMessage = await _messageService.GetMessageDetailAsync(id);
+            if (originalMessage == null)
+            {
+                return NotFound();
+            }
+
+            // Verificar se a mensagem pertence ao usuário
+            var userId = User.Identity!.Name;
+            if (originalMessage.UserId != userId)
+            {
+                return Forbid();
+            }
+
+            // Verificar se a mensagem foi respondida
+            if (originalMessage.Replies.Count == 0)
+            {
+                TempData["ErrorMessage"] = "Esta mensagem ainda não foi respondida pelo administrador.";
+                return RedirectToAction("Detail", new { id });
+            }
+
+            // Criar uma nova mensagem com a pergunta do usuário
+            var newMessage = new SendMessageViewModel
+            {
+                SenderName = originalMessage.SenderName,
+                SenderEmail = originalMessage.SenderEmail,
+                Subject = $"Re: {originalMessage.Subject}",
+                MessageContent = model.ReplyContent
+            };
+
+            var result = await _messageService.SendMessageAsync(newMessage, userId);
+
+            if (result)
+            {
+                TempData["SuccessMessage"] = "Pergunta enviada com sucesso! Responderemos em breve.";
+                return RedirectToAction("MyMessages");
+            }
+
+            TempData["ErrorMessage"] = "Erro ao enviar sua pergunta. Tente novamente.";
+            return RedirectToAction("Detail", new { id });
+        }
     }
 }

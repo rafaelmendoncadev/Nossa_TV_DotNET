@@ -11,9 +11,12 @@
         </a>
     </div>
 
+    <!-- Card da Mensagem Original -->
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">@Model.Subject</h5>
+            <h5 class="mb-0">
+                <i class="bi bi-envelope me-2"></i>@Model.Subject
+            </h5>
         </div>
         <div class="card-body">
             <div class="row mb-3">
@@ -37,31 +40,112 @@
 
     @if (Model.Replies.Count > 0)
     {
-        <h4 class="mb-3">Respostas</h4>
-        @foreach (var reply in Model.Replies)
-        {
-            <div class="card mb-3 border-start border-primary border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between mb-2">
-                        <small class="text-muted">
-                            <i class="bi bi-person-fill me-1"></i>Administrador
-                        </small>
-                        <small class="text-muted">
-                            <i class="bi bi-calendar me-1"></i>@reply.CreatedAt.ToString("dd/MM/yyyy HH:mm")
-                        </small>
+        <!-- Seção de Respostas -->
+        <div class="mb-4">
+            <h4 class="mb-3">
+                <i class="bi bi-chat-left-fill me-2"></i>Respostas Recebidas
+                <span class="badge bg-primary">@Model.Replies.Count</span>
+            </h4>
+            
+            @foreach (var reply in Model.Replies)
+            {
+                <div class="card mb-3 border-start border-primary border-4 bg-light">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+                                <small class="text-muted">
+                                    <i class="bi bi-person-circle me-1"></i><strong>Administrador</strong>
+                                </small>
+                            </div>
+                            <small class="text-muted">
+                                <i class="bi bi-calendar-event me-1"></i>@reply.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                            </small>
+                        </div>
+                        <div class="reply-content" style="background: white; padding: 1rem; border-radius: 0.5rem;">
+                            <p class="mb-0">@reply.ReplyContent</p>
+                        </div>
                     </div>
-                    <p class="mb-0">@reply.ReplyContent</p>
+                </div>
+            }
+        </div>
+
+        <!-- Formulário para Nova Pergunta -->
+        <div class="card mt-4 border-2 border-success shadow-sm">
+            <div class="card-header bg-success bg-opacity-10 border-success">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="bg-success text-white rounded-circle" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-chat-left-text"></i>
+                    </div>
+                    <h5 class="mb-0">
+                        Tem mais alguma dúvida?
+                    </h5>
+                    <span class="badge bg-success ms-auto">Nova</span>
                 </div>
             </div>
-        }
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Envie sua pergunta de acompanhamento abaixo. Ela será processada como uma nova mensagem e o administrador será notificado.
+                </p>
+
+                <form asp-action="Reply" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="form-group mb-3">
+                        <label for="ReplyContent" class="form-label fw-semibold">
+                            <i class="bi bi-pencil-square me-1"></i>Sua pergunta:
+                        </label>
+                        <textarea 
+                            class="form-control form-control-lg" 
+                            id="ReplyContent" 
+                            name="ReplyContent" 
+                            rows="4" 
+                            placeholder="Digite sua pergunta aqui..."
+                            required
+                            maxlength="2000"></textarea>
+                        <small class="text-muted d-block mt-1">
+                            Máximo 2000 caracteres
+                        </small>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-send-fill me-2"></i>Enviar Pergunta
+                        </button>
+                        <a asp-action="Send" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-plus-circle me-1"></i>Nova Mensagem
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
     }
     else
     {
-        <div class="alert alert-info" role="alert">
-            <i class="bi bi-info-circle me-2"></i>Esta mensagem ainda não foi respondida.
+        <!-- Alerta quando ainda não há resposta -->
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <i class="bi bi-hourglass-split me-2"></i>
+            <strong>Aguardando Resposta</strong>
+            <p class="mb-0">Esta mensagem ainda não foi respondida pelo administrador. Por favor, aguarde!</p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 </div>
+
+@section Scripts {
+    <script>
+        // Auto-dismiss alerts após 5 segundos
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert:not(.alert-danger)');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 5000);
+            });
+        });
+    </script>
+}
 
 @functions {
     string GetStatusBadgeClass(string status)
